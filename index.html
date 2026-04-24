@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小程序图片处理器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2937;
+      --muted: #667085;
+      --line: #d7dde6;
+      --panel: #ffffff;
+      --soft: #f3f6fa;
+      --accent: #1677ff;
+      --accent-dark: #0f5fd0;
+      --danger: #b42318;
+      --ok: #07803b;
+      --shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eef2f7;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 24px auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 14px;
+      min-height: 22px;
+      text-align: right;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 310px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 8px;
+    }
+
+    .controls {
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+      position: sticky;
+      top: 16px;
+    }
+
+    .settings-card {
+      border: 1px solid #dce3ed;
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .settings-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .settings-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #263445;
+    }
+
+    .settings-pill {
+      border: 1px solid #a8c7fa;
+      background: #eef6ff;
+      color: #175cd3;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .preset-btn {
+      min-height: 42px;
+      border: 1px solid #c9d2df;
+      border-radius: 6px;
+      background: #fff;
+      color: #27364a;
+      cursor: pointer;
+      padding: 7px 8px;
+      text-align: left;
+      line-height: 1.25;
+      transition: border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+
+    .preset-btn:hover:not(:disabled) {
+      border-color: #7aa7ee;
+      background: #f4f9ff;
+    }
+
+    .preset-btn.is-active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+      background: #fff;
+    }
+
+    .preset-name {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .preset-meta {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .settings-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .dropzone {
+      border: 2px dashed #aab4c3;
+      background: #f9fbfd;
+      border-radius: 8px;
+      min-height: 148px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .dropzone:hover,
+    .dropzone.is-dragging {
+      border-color: var(--accent);
+      background: #eef6ff;
+    }
+
+    .drop-title {
+      font-size: 17px;
+      font-weight: 650;
+      margin-bottom: 8px;
+    }
+
+    .drop-sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .file-input {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    label {
+      font-size: 13px;
+      color: #344054;
+      font-weight: 650;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid #bfc7d4;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+    }
+
+    .quality-line {
+      display: grid;
+      grid-template-columns: 1fr 44px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .quality-value {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .settings-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 40px;
+      border: 1px solid #bfc7d4;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      padding: 8px 12px;
+      transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      border-color: #8995a8;
+      background: #f8fafc;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+    }
+
+    .btn.danger {
+      border-color: #f1b8b2;
+      color: var(--danger);
+    }
+
+    .btn.danger:hover:not(:disabled) {
+      border-color: #d92d20;
+      background: #fff4f2;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .results {
+      min-height: 520px;
+      overflow: hidden;
+    }
+
+    .results-head {
+      display: grid;
+      grid-template-columns: 88px 1fr 130px 130px 112px 190px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+      color: #475467;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .list {
+      display: grid;
+    }
+
+    .empty {
+      min-height: 460px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 88px 1fr 130px 130px 112px 190px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf1f6;
+      min-height: 104px;
+    }
+
+    .thumb {
+      width: 76px;
+      height: 76px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f6f8fb;
+      object-fit: contain;
+      display: block;
+    }
+
+    .name {
+      font-weight: 650;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 5px;
+      line-height: 1.45;
+    }
+
+    .metric {
+      font-variant-numeric: tabular-nums;
+      line-height: 1.45;
+    }
+
+    .ok {
+      color: var(--ok);
+      font-weight: 650;
+    }
+
+    .warn {
+      color: var(--danger);
+      font-weight: 650;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .mini {
+      min-height: 34px;
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+
+    .preview {
+      max-width: min(900px, calc(100vw - 32px));
+      width: 900px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0;
+      box-shadow: var(--shadow);
+    }
+
+    .preview::backdrop {
+      background: rgba(15, 23, 42, 0.55);
+    }
+
+    .preview-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .preview-title {
+      font-weight: 650;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .preview-body {
+      background: #f1f4f8;
+      padding: 14px;
+      max-height: min(78vh, 840px);
+      overflow: auto;
+    }
+
+    .preview-img {
+      display: block;
+      max-width: 100%;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    @media (max-width: 920px) {
+      .app {
+        width: min(100% - 20px, 720px);
+        margin: 14px auto;
+      }
+
+      .topbar {
+        display: grid;
+        align-items: start;
+      }
+
+      .status {
+        text-align: left;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        position: static;
+      }
+
+      .results {
+        overflow-x: auto;
+      }
+
+      .results-head,
+      .item {
+        grid-template-columns: 76px minmax(180px, 1fr) 118px 118px 96px 178px;
+        min-width: 800px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar" aria-label="工具标题">
+      <h1>小程序图片处理器</h1>
+      <div class="status" id="status">宽度不超过 600，高度不超过宽度的 2 倍</div>
+    </section>
+
+    <section class="layout">
+      <aside class="panel controls" aria-label="处理设置">
+        <label class="dropzone" id="dropzone" for="fileInput">
+          <input class="file-input" id="fileInput" type="file" accept="image/*" multiple>
+          <span>
+            <span class="drop-title">选择或拖入图片</span>
+            <span class="drop-sub">支持多张，本地处理，不上传</span>
+          </span>
+        </label>
+
+        <section class="settings-card" aria-label="日常设置">
+          <div class="settings-head">
+            <div class="settings-title">日常设置</div>
+            <div class="settings-pill" id="activePreset">后台通用</div>
+          </div>
+
+          <div class="preset-grid">
+            <button class="preset-btn is-active" type="button" data-preset="daily">
+              <span class="preset-name">后台通用</span>
+              <span class="preset-meta">WEBP 92%</span>
+            </button>
+            <button class="preset-btn" type="button" data-preset="sharp">
+              <span class="preset-name">高清优先</span>
+              <span class="preset-meta">WEBP 96%</span>
+            </button>
+            <button class="preset-btn" type="button" data-preset="jpg">
+              <span class="preset-name">兼容 JPG</span>
+              <span class="preset-meta">JPG 92%</span>
+            </button>
+            <button class="preset-btn" type="button" data-preset="text">
+              <span class="preset-name">文字截图</span>
+              <span class="preset-meta">PNG 清晰</span>
+            </button>
+          </div>
+
+          <div class="settings-note" id="settingsNote">
+            默认适合小程序后台：宽 600，长图自动裁切，WEBP 高质量。
+          </div>
+
+          <div class="settings-actions">
+            <button class="btn mini" id="saveDefaultBtn" type="button">保存当前</button>
+            <button class="btn mini" id="resetDefaultBtn" type="button">恢复通用</button>
+          </div>
+        </section>
+
+        <div class="row">
+          <div class="field">
+            <label for="maxWidth">最大宽度</label>
+            <input id="maxWidth" type="number" min="100" max="2000" step="10" value="600">
+          </div>
+          <div class="field">
+            <label for="maxRatio">最高比例</label>
+            <select id="maxRatio">
+              <option value="2" selected>高 = 宽 x 2</option>
+              <option value="1.5">高 = 宽 x 1.5</option>
+              <option value="1">高 = 宽 x 1</option>
+              <option value="3">高 = 宽 x 3</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="mode">处理方式</label>
+          <select id="mode">
+            <option value="auto" selected>自动压缩，长图裁切</option>
+            <option value="resize">只等比例压缩</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="anchor">裁切位置</label>
+          <select id="anchor">
+            <option value="center" selected>保留中间</option>
+            <option value="top">保留顶部</option>
+            <option value="bottom">保留底部</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="format">输出格式</label>
+            <select id="format">
+              <option value="image/webp" selected>WEBP</option>
+              <option value="image/jpeg">JPG</option>
+              <option value="image/png">PNG</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="background">背景色</label>
+            <input id="background" type="color" value="#ffffff">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="quality">JPG / WEBP 质量</label>
+          <div class="quality-line">
+            <input id="quality" type="range" min="0.45" max="1" step="0.01" value="0.92">
+            <span class="quality-value" id="qualityValue">92%</span>
+          </div>
+        </div>
+
+        <label class="inline" for="noUpscale">
+          <input id="noUpscale" type="checkbox" checked>
+          <span>小图不放大</span>
+        </label>
+
+        <div class="buttons">
+          <button class="btn" id="clearBtn" type="button" disabled>清空</button>
+          <button class="btn primary" id="downloadAllBtn" type="button" disabled>下载全部</button>
+        </div>
+      </aside>
+
+      <section class="panel results" aria-label="处理结果">
+        <div class="results-head" aria-hidden="true">
+          <span>预览</span>
+          <span>文件</span>
+          <span>原始尺寸</span>
+          <span>处理后</span>
+          <span>大小</span>
+          <span>操作</span>
+        </div>
+        <div class="list" id="list">
+          <div class="empty" id="empty">
+            <div>还没有图片<br>把图片拖到左侧区域即可开始</div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog class="preview" id="previewDialog">
+    <div class="preview-head">
+      <div class="preview-title" id="previewTitle">预览</div>
+      <button class="btn mini" id="closePreview" type="button">关闭</button>
+    </div>
+    <div class="preview-body">
+      <img class="preview-img" id="previewImage" alt="">
+    </div>
+  </dialog>
+
+  <script>
+    const els = {
+      fileInput: document.getElementById("fileInput"),
+      dropzone: document.getElementById("dropzone"),
+      maxWidth: document.getElementById("maxWidth"),
+      maxRatio: document.getElementById("maxRatio"),
+      mode: document.getElementById("mode"),
+      anchor: document.getElementById("anchor"),
+      format: document.getElementById("format"),
+      background: document.getElementById("background"),
+      quality: document.getElementById("quality"),
+      qualityValue: document.getElementById("qualityValue"),
+      noUpscale: document.getElementById("noUpscale"),
+      activePreset: document.getElementById("activePreset"),
+      settingsNote: document.getElementById("settingsNote"),
+      saveDefaultBtn: document.getElementById("saveDefaultBtn"),
+      resetDefaultBtn: document.getElementById("resetDefaultBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      downloadAllBtn: document.getElementById("downloadAllBtn"),
+      list: document.getElementById("list"),
+      empty: document.getElementById("empty"),
+      status: document.getElementById("status"),
+      previewDialog: document.getElementById("previewDialog"),
+      previewTitle: document.getElementById("previewTitle"),
+      previewImage: document.getElementById("previewImage"),
+      closePreview: document.getElementById("closePreview")
+    };
+
+    let files = [];
+    let results = [];
+    let isProcessing = false;
+
+    const settingsControls = [
+      els.maxWidth,
+      els.maxRatio,
+      els.mode,
+      els.anchor,
+      els.format,
+      els.background,
+      els.quality,
+      els.noUpscale
+    ];
+
+    const presetButtons = Array.from(document.querySelectorAll("[data-preset]"));
+
+    const storageKey = "miniapp-image-tool-settings";
+
+    const presets = {
+      daily: {
+        label: "后台通用",
+        note: "默认适合小程序后台：宽 600，长图自动裁切，WEBP 高质量。",
+        settings: {
+          maxWidth: 600,
+          maxRatio: 2,
+          mode: "auto",
+          anchor: "center",
+          format: "image/webp",
+          quality: 0.92,
+          background: "#ffffff",
+          noUpscale: true
+        }
+      },
+      sharp: {
+        label: "高清优先",
+        note: "画质优先：仍保持宽 600，WEBP 质量更高，文件会稍大。",
+        settings: {
+          maxWidth: 600,
+          maxRatio: 2,
+          mode: "auto",
+          anchor: "center",
+          format: "image/webp",
+          quality: 0.96,
+          background: "#ffffff",
+          noUpscale: true
+        }
+      },
+      jpg: {
+        label: "兼容 JPG",
+        note: "兼容性优先：适合只认 JPG 的后台，清晰度和体积比较均衡。",
+        settings: {
+          maxWidth: 600,
+          maxRatio: 2,
+          mode: "auto",
+          anchor: "center",
+          format: "image/jpeg",
+          quality: 0.92,
+          background: "#ffffff",
+          noUpscale: true
+        }
+      },
+      text: {
+        label: "文字截图",
+        note: "文字清晰优先：PNG 不做有损压缩，截图和文字边缘更稳。",
+        settings: {
+          maxWidth: 600,
+          maxRatio: 2,
+          mode: "auto",
+          anchor: "top",
+          format: "image/png",
+          quality: 1,
+          background: "#ffffff",
+          noUpscale: true
+        }
+      }
+    };
+
+    const formatExt = {
+      "image/jpeg": "jpg",
+      "image/webp": "webp",
+      "image/png": "png"
+    };
+
+    function getSettings() {
+      return {
+        maxWidth: clamp(Number(els.maxWidth.value) || 600, 100, 2000),
+        maxRatio: clamp(Number(els.maxRatio.value) || 2, 0.5, 8),
+        mode: els.mode.value,
+        anchor: els.anchor.value,
+        format: els.format.value,
+        quality: clamp(Number(els.quality.value) || 0.92, 0.45, 1),
+        background: els.background.value || "#ffffff",
+        noUpscale: els.noUpscale.checked
+      };
+    }
+
+    function applySettings(settings) {
+      els.maxWidth.value = settings.maxWidth;
+      els.maxRatio.value = String(settings.maxRatio);
+      els.mode.value = settings.mode;
+      els.anchor.value = settings.anchor;
+      els.format.value = settings.format;
+      els.quality.value = settings.quality;
+      els.background.value = settings.background;
+      els.noUpscale.checked = settings.noUpscale;
+      handleSettingsChanged(false);
+    }
+
+    function handleSettingsChanged(shouldSave) {
+      updateQualityText();
+      updateStatus();
+      updatePresetUI();
+      if (shouldSave) saveSettings(getSettings());
+      if (files.length) processAll();
+    }
+
+    function sameSettings(left, right) {
+      return left.maxWidth === right.maxWidth
+        && Number(left.maxRatio) === Number(right.maxRatio)
+        && left.mode === right.mode
+        && left.anchor === right.anchor
+        && left.format === right.format
+        && Number(left.quality) === Number(right.quality)
+        && left.background.toLowerCase() === right.background.toLowerCase()
+        && left.noUpscale === right.noUpscale;
+    }
+
+    function activePresetKey() {
+      const settings = getSettings();
+      return Object.keys(presets).find((key) => sameSettings(settings, presets[key].settings));
+    }
+
+    function updatePresetUI() {
+      const key = activePresetKey();
+      presetButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.preset === key);
+      });
+
+      if (key) {
+        els.activePreset.textContent = presets[key].label;
+        els.settingsNote.textContent = presets[key].note;
+      } else {
+        els.activePreset.textContent = "自定义";
+        els.settingsNote.textContent = "当前为自定义参数；保存当前后，下次打开会自动使用这套设置。";
+      }
+    }
+
+    function saveSettings(settings) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(settings));
+      } catch (error) {
+        console.warn("保存设置失败", error);
+      }
+    }
+
+    function loadSettings() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (stored && typeof stored === "object") return { ...presets.daily.settings, ...stored };
+      } catch (error) {
+        console.warn("读取设置失败", error);
+      }
+      return presets.daily.settings;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes)) return "-";
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+    }
+
+    function outputName(name, width, height, ext) {
+      const clean = name.replace(/\.[^.]+$/, "");
+      return `${clean}_${width}x${height}.${ext}`;
+    }
+
+    function setBusy(isBusy) {
+      isProcessing = isBusy;
+      settingsControls.forEach((control) => {
+        control.disabled = isBusy;
+      });
+      presetButtons.forEach((button) => {
+        button.disabled = isBusy;
+      });
+      els.saveDefaultBtn.disabled = isBusy;
+      els.resetDefaultBtn.disabled = isBusy;
+      els.fileInput.disabled = isBusy;
+      els.clearBtn.disabled = isBusy || results.length === 0;
+      els.downloadAllBtn.disabled = isBusy || results.length === 0;
+    }
+
+    function updateQualityText() {
+      els.qualityValue.textContent = `${Math.round(Number(els.quality.value) * 100)}%`;
+    }
+
+    function updateStatus(message) {
+      if (message) {
+        els.status.textContent = message;
+        return;
+      }
+      const settings = getSettings();
+      const ext = formatExt[settings.format].toUpperCase();
+      const quality = settings.format === "image/png" ? "无损" : `${Math.round(settings.quality * 100)}%`;
+      els.status.textContent = `${ext} ${quality}，宽度不超过 ${settings.maxWidth}，高度不超过宽度的 ${settings.maxRatio} 倍`;
+    }
+
+    function collectImages(fileList) {
+      return Array.from(fileList).filter((file) => file.type.startsWith("image/"));
+    }
+
+    function makeFileItem(file) {
+      const id = crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      return { id, file };
+    }
+
+    async function handleFiles(fileList) {
+      const picked = collectImages(fileList);
+      if (!picked.length) return;
+      files = picked.map(makeFileItem);
+      await processAll();
+    }
+
+    async function processAll() {
+      if (!files.length) return;
+      revokeResults();
+      results = [];
+      renderShell();
+      setBusy(true);
+      updateStatus(`正在处理 ${files.length} 张图片...`);
+
+      const settings = getSettings();
+      for (let index = 0; index < files.length; index += 1) {
+        const fileItem = files[index];
+        const file = fileItem.file;
+        try {
+          const result = await processImage(file, settings);
+          result.fileId = fileItem.id;
+          results.push(result);
+        } catch (error) {
+          results.push({
+            id: `${Date.now()}-${index}`,
+            fileId: fileItem.id,
+            name: file.name,
+            originalSize: file.size,
+            error: error.message || "处理失败"
+          });
+        }
+        renderResults();
+        updateStatus(`已处理 ${index + 1} / ${files.length}`);
+      }
+
+      setBusy(false);
+      updateStatus();
+    }
+
+    async function processImage(file, settings) {
+      const sourceImage = await loadSourceImage(file);
+      const source = getSourceRect(sourceImage.width, sourceImage.height, settings);
+      const target = getTargetSize(source.width, source.height, settings);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { alpha: settings.format === "image/png" });
+      if (!ctx) throw new Error("浏览器无法创建画布");
+
+      canvas.width = target.width;
+      canvas.height = target.height;
+
+      if (settings.format !== "image/png") {
+        ctx.fillStyle = settings.background;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(
+        sourceImage.image,
+        source.x,
+        source.y,
+        source.width,
+        source.height,
+        0,
+        0,
+        target.width,
+        target.height
+      );
+      sourceImage.close();
+
+      const blob = await canvasToBlob(canvas, settings.format, settings.quality);
+      const url = URL.createObjectURL(blob);
+      const ext = formatExt[settings.format] || "jpg";
+
+      return {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: file.name,
+        outputName: outputName(file.name, target.width, target.height, ext),
+        originalWidth: source.originalWidth,
+        originalHeight: source.originalHeight,
+        originalSize: file.size,
+        outputWidth: target.width,
+        outputHeight: target.height,
+        outputSize: blob.size,
+        blob,
+        url,
+        cropped: source.cropped,
+        resized: target.width !== source.width || target.height !== source.height
+      };
+    }
+
+    async function loadSourceImage(file) {
+      if ("createImageBitmap" in window) {
+        const image = await createImageBitmap(file);
+        return {
+          image,
+          width: image.width,
+          height: image.height,
+          close: () => image.close()
+        };
+      }
+
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.decoding = "async";
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error("图片读取失败"));
+        image.src = url;
+      });
+
+      return {
+        image,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        close: () => URL.revokeObjectURL(url)
+      };
+    }
+
+    function getSourceRect(width, height, settings) {
+      const shouldCrop = settings.mode !== "resize" && height / width > settings.maxRatio;
+      const cropHeight = shouldCrop ? Math.floor(width * settings.maxRatio) : height;
+      let y = 0;
+
+      if (shouldCrop) {
+        if (settings.anchor === "center") {
+          y = Math.floor((height - cropHeight) / 2);
+        } else if (settings.anchor === "bottom") {
+          y = height - cropHeight;
+        }
+      }
+
+      return {
+        x: 0,
+        y,
+        width,
+        height: cropHeight,
+        originalWidth: width,
+        originalHeight: height,
+        cropped: shouldCrop
+      };
+    }
+
+    function getTargetSize(width, height, settings) {
+      const ratio = settings.noUpscale
+        ? Math.min(1, settings.maxWidth / width)
+        : settings.maxWidth / width;
+      return {
+        width: Math.max(1, Math.round(width * ratio)),
+        height: Math.max(1, Math.round(height * ratio))
+      };
+    }
+
+    function canvasToBlob(canvas, format, quality) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("浏览器无法导出这个格式"));
+          },
+          format,
+          format === "image/png" ? undefined : quality
+        );
+      });
+    }
+
+    function renderShell() {
+      els.empty.hidden = true;
+      els.list.innerHTML = "";
+    }
+
+    function renderResults() {
+      if (!results.length) {
+        els.list.innerHTML = "";
+        els.empty.hidden = false;
+        els.list.appendChild(els.empty);
+        els.clearBtn.disabled = true;
+        els.downloadAllBtn.disabled = true;
+        return;
+      }
+
+      els.empty.hidden = true;
+      els.list.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+      results.forEach((result) => {
+        fragment.appendChild(renderResult(result));
+      });
+      els.list.appendChild(fragment);
+      els.clearBtn.disabled = isProcessing || false;
+      els.downloadAllBtn.disabled = isProcessing || results.every((result) => result.error);
+    }
+
+    function renderResult(result) {
+      const item = document.createElement("div");
+      item.className = "item";
+
+      if (result.error) {
+        item.innerHTML = `
+          <div></div>
+          <div>
+            <div class="name"></div>
+            <div class="meta warn"></div>
+          </div>
+          <div class="metric">-</div>
+          <div class="metric">-</div>
+          <div class="metric">${formatBytes(result.originalSize)}</div>
+          <div class="actions">
+            <button class="btn mini danger" type="button" data-action="delete">删除</button>
+          </div>
+        `;
+        item.querySelector(".name").textContent = result.name;
+        item.querySelector(".warn").textContent = result.error;
+        item.querySelector('[data-action="delete"]').addEventListener("click", () => {
+          deleteResult(result);
+        });
+        return item;
+      }
+
+      const sizeClass = result.outputSize <= result.originalSize ? "ok" : "";
+      const operations = [];
+      if (result.resized) operations.push("压缩");
+      if (result.cropped) operations.push("裁切");
+      if (!operations.length) operations.push("保持");
+
+      item.innerHTML = `
+        <div><img class="thumb" alt=""></div>
+        <div>
+          <div class="name"></div>
+          <div class="meta"></div>
+        </div>
+        <div class="metric">${result.originalWidth} x ${result.originalHeight}</div>
+        <div class="metric">${result.outputWidth} x ${result.outputHeight}</div>
+        <div class="metric">
+          <div class="${sizeClass}">${formatBytes(result.outputSize)}</div>
+          <div class="meta">${formatBytes(result.originalSize)}</div>
+        </div>
+        <div class="actions">
+          <button class="btn mini" type="button" data-action="preview">预览</button>
+          <button class="btn mini primary" type="button" data-action="download">下载</button>
+          <button class="btn mini danger" type="button" data-action="delete">删除</button>
+        </div>
+      `;
+
+      item.querySelector(".thumb").src = result.url;
+      item.querySelector(".name").textContent = result.outputName;
+      item.querySelector(".meta").textContent = operations.join(" + ");
+
+      item.querySelector('[data-action="preview"]').addEventListener("click", () => {
+        openPreview(result);
+      });
+      item.querySelector('[data-action="download"]').addEventListener("click", () => {
+        downloadResult(result);
+      });
+      item.querySelector('[data-action="delete"]').addEventListener("click", () => {
+        deleteResult(result);
+      });
+
+      return item;
+    }
+
+    function openPreview(result) {
+      els.previewTitle.textContent = `${result.outputName} · ${result.outputWidth} x ${result.outputHeight}`;
+      els.previewImage.src = result.url;
+      if (typeof els.previewDialog.showModal === "function") {
+        els.previewDialog.showModal();
+      }
+    }
+
+    function downloadResult(result) {
+      if (!result || result.error) return;
+      const link = document.createElement("a");
+      link.href = result.url;
+      link.download = result.outputName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function downloadAll() {
+      const downloadable = results.filter((result) => !result.error);
+      downloadable.forEach((result, index) => {
+        setTimeout(() => downloadResult(result), index * 180);
+      });
+    }
+
+    function deleteResult(result) {
+      if (!result || isProcessing) return;
+      if (result.url) URL.revokeObjectURL(result.url);
+      files = files.filter((fileItem) => fileItem.id !== result.fileId);
+      results = results.filter((item) => item.id !== result.id);
+      if (!files.length) els.fileInput.value = "";
+      renderResults();
+      updateStatus(results.length ? "已从列表移除这张图片" : "列表已清空");
+    }
+
+    function clearAll() {
+      files = [];
+      revokeResults();
+      results = [];
+      els.fileInput.value = "";
+      els.list.innerHTML = "";
+      els.empty.hidden = false;
+      els.list.appendChild(els.empty);
+      els.clearBtn.disabled = true;
+      els.downloadAllBtn.disabled = true;
+      updateStatus();
+    }
+
+    function revokeResults() {
+      results.forEach((result) => {
+        if (result.url) URL.revokeObjectURL(result.url);
+      });
+    }
+
+    els.fileInput.addEventListener("change", (event) => {
+      handleFiles(event.target.files);
+    });
+
+    ["dragenter", "dragover"].forEach((type) => {
+      els.dropzone.addEventListener(type, (event) => {
+        event.preventDefault();
+        els.dropzone.classList.add("is-dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((type) => {
+      els.dropzone.addEventListener(type, (event) => {
+        event.preventDefault();
+        els.dropzone.classList.remove("is-dragging");
+      });
+    });
+
+    els.dropzone.addEventListener("drop", (event) => {
+      handleFiles(event.dataTransfer.files);
+    });
+
+    settingsControls.forEach((control) => {
+      control.addEventListener("input", () => {
+        handleSettingsChanged(false);
+      });
+      control.addEventListener("change", () => {
+        handleSettingsChanged(false);
+      });
+    });
+
+    presetButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const preset = presets[button.dataset.preset];
+        if (!preset) return;
+        applySettings(preset.settings);
+        saveSettings(getSettings());
+      });
+    });
+
+    els.saveDefaultBtn.addEventListener("click", () => {
+      saveSettings(getSettings());
+      updateStatus("已保存当前设置，下次打开会自动使用");
+    });
+
+    els.resetDefaultBtn.addEventListener("click", () => {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (error) {
+        console.warn("恢复设置失败", error);
+      }
+      applySettings(presets.daily.settings);
+      updateStatus("已恢复后台通用设置");
+    });
+
+    els.clearBtn.addEventListener("click", clearAll);
+    els.downloadAllBtn.addEventListener("click", downloadAll);
+    els.closePreview.addEventListener("click", () => {
+      els.previewDialog.close();
+    });
+
+    applySettings(loadSettings());
+  </script>
+</body>
+</html>
