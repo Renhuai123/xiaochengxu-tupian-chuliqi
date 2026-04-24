@@ -1,38 +1,39 @@
-# Miniapp Image Tool
+# 小程序图片处理器
 
-A tiny, local-only HTML tool for resizing and cropping images before uploading them to mini program admin panels.
+一个纯本地运行的图片处理工具，用来在上传小程序后台、文章后台或内容管理系统前，快速把图片等比例压缩、裁切成长宽合适的版本。
 
-## Features
+## 功能特点
 
-- Runs fully in the browser, with no server and no image upload.
-- Batch import by selecting or dragging images.
-- Default daily preset: WEBP 92%, max width 600 px, long vertical images cropped automatically.
-- Extra presets for higher quality, JPG compatibility, and text screenshots.
-- Preview, download, download all, and remove individual processed images.
-- Remembers your saved settings in the browser.
+- 直接打开 `index.html` 就能用，不需要安装软件。
+- 所有图片都在浏览器本地处理，不会上传到服务器。
+- 支持多张图片批量拖入或选择。
+- 默认适合后台上传：`WEBP 92%`、最大宽度 `600px`、长竖图自动裁切。
+- 提供「后台通用」「高清优先」「兼容 JPG」「文字截图」四种日常方案。
+- 支持预览、单张下载、批量下载、删除单张处理结果。
+- 会记住你保存过的设置，下次打开自动沿用。
 
-## Usage
+## 使用方法
 
-Open `index.html` in a browser, drop images into the upload area, then download the processed files.
+用浏览器打开 `index.html`，把图片拖进去，处理完成后下载即可。
 
-The default rule is:
+默认规则：
 
-- Width is capped at `600 px`.
-- Height is capped at `2 x width`.
-- Normal photos are resized proportionally.
-- Very tall images are cropped first, then resized.
+- 图片宽度不超过 `600px`。
+- 图片高度不超过 `宽度 x 2`。
+- 普通横图和正常比例图片会等比例缩小。
+- 过长的竖图会先裁切，再等比例压缩。
 
-## Recommended Settings
+## 推荐设置
 
-- Daily admin upload: `WEBP`, quality `92%`.
-- Maximum quality: `WEBP`, quality `96%`.
-- Compatibility: `JPG`, quality `92%`.
-- Text-heavy screenshots: `PNG`.
+- 日常后台上传：`WEBP`，质量 `92%`。
+- 更高清版本：`WEBP`，质量 `96%`。
+- 兼容性优先：`JPG`，质量 `92%`。
+- 文字截图或界面截图：`PNG`。
 
-## Privacy
+## 隐私说明
 
-All processing happens locally in your browser. The tool does not send images anywhere.
+图片处理完全发生在你的浏览器里。这个工具没有后端服务，也不会把图片发送到任何地方。
 
-## License
+## 开源协议
 
-MIT
+MIT License
